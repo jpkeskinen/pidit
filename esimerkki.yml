@@ -1,0 +1,35 @@
+origin_lon: 25.74741
+origin_lat: 62.24264
+origin_time: 2020-04-21 12:22:43 +00
+origin_x: 434918.0
+origin_y: 6901840.0
+origin_z: 0.0
+rotation_angle: 0.0
+acronym: 'esim'
+author: "Jukka-Pekka Keskinen (FMI)"
+campaign: 
+contact_person: "jukka-pekka.keskinen@fmi.fi"
+comment: "Esimerkkitiedosto"
+data_content: 'ei juuri mitään'
+dependencies:
+keywords: "pids, palm, esimerkki"
+license: "CC-BY"
+location: "Jyväskylä"
+palm_version: "22.02"
+site: "Kompassi"
+source: 
+title: "Esimerkkiasetukset"
+version: 1
+
+crs:
+ grid_mapping_name: 'transverse_mercator'
+ semi_major_axis: 6378137.0
+ inverse_flattening: 298.257223563
+ longitude_of_prime_meridian: 0.0
+ longitude_of_central_meridian: 27.0
+ latitude_of_projection_origin: 0.0
+ scale_factor_at_central_meridian: 0.9996
+ false_easting: 500000.0
+ false_northing: 0.0
+ units: m
+ epsg_code: EPSG:32635
