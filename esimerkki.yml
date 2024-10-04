@@ -33,3 +33,5 @@ crs:
  false_northing: 0.0
  units: m
  epsg_code: EPSG:32635
+
+dem: "pintamalli.tif"

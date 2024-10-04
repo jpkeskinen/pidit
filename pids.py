@@ -4,9 +4,11 @@
 # Jukka-Pekka Keskinen
 
 import xarray as xr
+import rioxarray as rxr
 from datetime import datetime, timezone
 import yaml
 import os
+import numpy as np
 
 class Pids:
     def __init__(self):
@@ -70,7 +72,18 @@ class Pids:
                     os.exit('CRS-tiedoista puuttuu '+i)                                
 
             self.xrds['crs'] = CRS
-        
+
+        # Luetaan maanpintatiedot
+        if 'dem' in data:
+             D = rxr.open_rasterio(data['dem'])
+             D = D.isel(band=0).sortby('y')
+             if not 'x' in self.xrds.coords or not 'y' in self.xrds.coords:
+                 self.xrds['zt'] = xr.DataArray( D.data, coords = [
+                     ('y', (D.y-D.y[0]).data.astype(np.float32)),
+                     ('x', (D.x-D.x[0]).data.astype(np.float32)) ] )
+             else:
+                 os.exit('Koordinaatistot ovat jo olemassa.')
+             
     def tallennus(self, polku='PIDS_STATIC'):
         self.xrds.attrs['history'] = str(datetime.now().replace(microsecond=0)) + ': File created'
         self.xrds.attrs['creation_time'] = str(
