@@ -77,12 +77,17 @@ class Pids:
         if 'dem' in data:
              D = rxr.open_rasterio(data['dem'])
              D = D.isel(band=0).sortby('y')
-             if not 'x' in self.xrds.coords or not 'y' in self.xrds.coords:
+             if not 'x' in self.xrds.coords and not 'y' in self.xrds.coords:
                  self.xrds['zt'] = xr.DataArray( D.data, coords = [
                      ('y', (D.y-D.y[0]).data.astype(np.float32)),
                      ('x', (D.x-D.x[0]).data.astype(np.float32)) ] )
              else:
                  os.exit('Koordinaatistot ovat jo olemassa.')
+
+        # Luetaan latvustotiedot. Siirtymä 2D-rasterista 3D:hen
+        # tapahtuu samoin kuin P4UL:ssa.
+        if 'chm' in data:
+               
              
     def tallennus(self, polku='PIDS_STATIC'):
         self.xrds.attrs['history'] = str(datetime.now().replace(microsecond=0)) + ': File created'
