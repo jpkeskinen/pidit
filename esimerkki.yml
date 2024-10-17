@@ -34,4 +34,8 @@ crs:
  units: m
  epsg_code: EPSG:32635
 
-dem: "pintamalli.tif"
+3dpad:
+ tiedosto: "rkorpi_PAD.tif"
+ dztiff: 1.0
+ dzpids: 1.25
+ interpolointi: 'nearest'
