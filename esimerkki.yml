@@ -34,8 +34,8 @@ crs:
  units: m
  epsg_code: EPSG:32635
 
-3dpad:
+chm:
  tiedosto: "rkorpi_PAD.tif"
  dztiff: 1.0
- dzpids: 1.25
+ dz: 1.25
  interpolointi: 'nearest'
