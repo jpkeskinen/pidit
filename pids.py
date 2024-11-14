@@ -1,6 +1,6 @@
 # Luokka PIDS-tiedostoja varten
 
-# 18.9.2024
+# 2024
 # Jukka-Pekka Keskinen
 
 import xarray as xr
@@ -116,16 +116,11 @@ class Pids:
                 R.close()
                 del R
                 del D
-                
-            else:
-                print('2D-tiedoston nimi puuttuu.')
-                sys.exit()
-                 
-                
+                                
         
         if 'tiedosto3d' in data['chm']:
             print('Luodaan latvustotiedot 3D-tiedostosta.')
-            D = rxr.open_rasterio(data['3dpad']['tiedosto'])
+            D = rxr.open_rasterio(data['chm']['tiedosto3d']).sortby('y')
 
             # Oletetaan, että luettavassa tiedostossa ensimmäine  taso on 0 m.
             if 'dztiff' in data['chm']:
@@ -139,7 +134,7 @@ class Pids:
                 if self.xrds.x.size == D.x.size and self.xrds.y.size == D.y.size:
                     T = xr.DataArray( D.data, coords = [
                         ('zlad', dz0*(D.band.data-1).astype(np.float32)),
-                        ('y', self.xrds.y), ('x', self.xrds.x) ] )
+                        ('y', self.xrds.y.data), ('x', self.xrds.x.data) ] )
                 else:
                     sys.exit('Koordinaatistot eivät täsmää.')
             else:
