@@ -72,6 +72,7 @@ class Pids:
                 else:
                     sys.exit('CRS-tiedoista puuttuu '+i)                                
 
+            CRS.attrs['long_name'] = 'coordinate reference system'
             self.xrds['crs'] = CRS
 
         # Luetaan maanpintatiedot
