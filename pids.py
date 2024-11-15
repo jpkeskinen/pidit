@@ -158,8 +158,8 @@ class Pids:
             else:
                 inmen = 'nearest'
                 
-            zu = np.append(0.0, np.arange(dz/2, T.zlad[-1]+dz/100, dz, dtype=np.float32) )
-            self.xrds['lad'] = T.interp(zlad=zu, method=inmen)
+            zu = np.append(0.0, np.arange(dz/2, self.xrds['zlad'][-1]+dz/100, dz, dtype=np.float32) )
+            self.xrds['lad'] = self.xrds['lad'].interp(zlad=zu, method=inmen)
             
             self.xrds['lad'].attrs['units'] = 'm2 m-3'
             self.xrds['lad'].attrs['long_name'] = 'leaf area density'
