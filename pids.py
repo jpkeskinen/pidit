@@ -79,11 +79,13 @@ class Pids:
             D = rxr.open_rasterio(data['dem'])
             D = D.isel(band=0).sortby('y')
             if not 'x' in self.xrds.coords and not 'y' in self.xrds.coords:
-                self.xrds['zt'] = xr.DataArray( D.data, coords = [
-                    ('y', (D.y-D.y[0]).data.astype(np.float32)),
-                    ('x', (D.x-D.x[0]).data.astype(np.float32)) ] )
-            else:
-                sys.exit('Koordinaatistot ovat jo olemassa.')
+                self.luo_xy((D.x-D.x[0]).data.astype(np.float32),
+                            (D.y-D.y[0]).data.astype(np.float32))
+
+            self.xrds['zt'] = (('x', 'y'), D.data)
+            self.xrds['zt'].attrs['units'] = 'm'
+            self.xrds['zt'].attrs['long_name'] = 'terrain height'
+            self.xrds['zt'].attrs['_FillValue'] = -9999.0
 
             D.close()
             del D
@@ -101,70 +103,72 @@ class Pids:
                 D = _chm_p4ul(R.isel(band=0).sortby('y').data,dx,dz=dz)
 
                 if 'x' in self.xrds.coords and 'y' in self.xrds.coords:
-                    if self.xrds.x.size == R.x.size and self.xrds.y.size == R.y.size:
-                        xk = self.xrds.x
-                        yk = self.xrds.y
-                    else:
+                    if not self.xrds.x.size == R.x.size or self.xrds.y.size == R.y.size:
                         sys.exit('Koordinaatistot eivät täsmää.')
                 else:
-                    xk = (R.x-R.x[0]).data.astype(np.float32)
-                    yk = (R.y-R.y[0]).data.astype(np.float32)
-                    
-                T = xr.DataArray( D, coords = [ ('x', xk), ('y', yk),
-                            ('zlad', dz*(np.arange(D.shape[-1])).astype(np.float32)) ] )
+                    self.luo_xy((R.x-R.x[0]).data.astype(np.float32),
+                            (R.y-R.y[0]).data.astype(np.float32))
+
+                self.xrds['zlad'] = dz*(np.arange(D.shape[-1])).astype(np.float32)                
+                
+                self.xrds['lad'] = (('x', 'y', 'zlad'), D)
 
                 R.close()
                 del R
                 del D
-                                
-        
-        if 'tiedosto3d' in data['chm']:
-            print('Luodaan latvustotiedot 3D-tiedostosta.')
-            D = rxr.open_rasterio(data['chm']['tiedosto3d']).sortby('y')
+                                        
+            elif 'tiedosto3d' in data['chm']:
+                print('Luodaan latvustotiedot 3D-tiedostosta.')
+                D = rxr.open_rasterio(data['chm']['tiedosto3d']).sortby('y')
 
-            # Oletetaan, että luettavassa tiedostossa ensimmäine  taso on 0 m.
-            if 'dztiff' in data['chm']:
-                dz0 = float(data['chm']['dztiff'])
-            elif 'dz' in data['chm']:
-                dz0 = float(data['chm']['dz'])
-            else:
-                dz0 = 1.0
-            
-            if 'x' in self.xrds.coords and 'y' in self.xrds.coords:
-                if self.xrds.x.size == D.x.size and self.xrds.y.size == D.y.size:
-                    T = xr.DataArray( D.data, coords = [
-                        ('zlad', dz0*(D.band.data-1).astype(np.float32)),
-                        ('y', self.xrds.y.data), ('x', self.xrds.x.data) ] )
+                # Oletetaan, että luettavassa tiedostossa ensimmäine  taso on 0 m.
+                if 'dztiff' in data['chm']:
+                    dz0 = float(data['chm']['dztiff'])
+                elif 'dz' in data['chm']:
+                    dz0 = float(data['chm']['dz'])
                 else:
-                    sys.exit('Koordinaatistot eivät täsmää.')
+                    dz0 = 1.0
+            
+                if 'x' in self.xrds.coords and 'y' in self.xrds.coords:
+                    if not self.xrds.x.size == D.x.size and not self.xrds.y.size == D.y.size:
+                        sys.exit('Koordinaatistot eivät täsmää.')
+                else:
+                    self.luo_xy((D.x-D.x[0]).data.astype(np.float32),
+                                (D.y-D.y[0]).data.astype(np.float32))
+
+                self.xrds['zlad'] = dz0*(D.band.data-1).astype(np.float32)
+
+                self.xrds['lad'] = (('zlad', 'y', 'x'), D.data)
+
+                D.close()
+                del D
+
             else:
-                T = xr.DataArray( D.data, coords = [
-                    ('zlad', dz0*(D.band.data-1).astype(np.float32)),
-                    ('y', (D.y-D.y[0]).data.astype(np.float32)),
-                    ('x', (D.x-D.x[0]).data.astype(np.float32))  ] )
+                sys.exit('Puuttuva tiedosto chm-tiedoissa.')
+
 
             # Muokataan z-akseli kuntoon.
             if 'dz' in data['chm']:
                 dz = float(data['chm']['dz'])
             else:
                 dz = dz0
-
-            D.close()
-            del D
                 
-        if 'interpolointi' in data['chm']:
-            inmen = data['chm']['interpolointi']
-        else:
-            inmen = 'nearest'
+            if 'interpolointi' in data['chm']:
+                inmen = data['chm']['interpolointi']
+            else:
+                inmen = 'nearest'
                 
-        zu = np.append(0.0, np.arange(dz/2, T.zlad[-1]+dz/100, dz, dtype=np.float32) )
-        
-        self.xrds['lad'] = T.interp(zlad=zu, method=inmen)
-
-        del T
-
+            zu = np.append(0.0, np.arange(dz/2, T.zlad[-1]+dz/100, dz, dtype=np.float32) )
+            self.xrds['lad'] = T.interp(zlad=zu, method=inmen)
+            
+            self.xrds['lad'].attrs['units'] = 'm2 m-3'
+            self.xrds['lad'].attrs['long_name'] = 'leaf area density'
+            self.xrds['lad'].attrs['_FillValue'] = -9999.0
+            self.xrds['zlad'].attrs['units'] = 'm'
+            self.xrds['zlad'].attrs['long_name'] = 'height above ground'
+            self.xrds['zlad'].attrs['positive'] = 'up'
+            self.xrds['zlad'].attrs['axis'] = 'Z'
     
-
             
     def tallennus(self, polku='PIDS_STATIC'):
         self.xrds.attrs['history'] = str(datetime.now().replace(microsecond=0)) + ': File created'
@@ -172,6 +176,23 @@ class Pids:
             datetime.now(timezone.utc).replace(microsecond=0))[:-6] + ' +00'
         self.xrds.to_netcdf(polku)
 
+    def luo_xy(self, x, y):
+        """Luodaan x- ja y-koordinaatit tif-tiedoston perusteella.
+
+        Argumentit:
+        tiedosto: str, tiedoston nimi.
+        """
+        if 'x' not in self.xrds.coords and not 'y' in self.xrds.coords:
+            self.xrds['x'] = x
+            self.xrds['x'].attrs['units'] = 'm'
+            self.xrds['x'].attrs['long_name'] = 'distance to origin in x-direction'
+            self.xrds['x'].attrs['axis'] = 'X'
+            self.xrds['y'] = y
+            self.xrds['y'].attrs['units'] = 'm'
+            self.xrds['y'].attrs['long_name'] = 'distance to origin in y-direction'
+            self.xrds['y'].attrs['axis'] = 'Y'
+
+        
 def _chm_p4ul(R, dPx, laiRef=6.0, zref=[4.0, 20.0], dz=None):
     # The function code is adapted from P4UL
     # The code is licensed under the MIT License.
