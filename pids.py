@@ -95,6 +95,8 @@ class Pids:
         # tapahtuu samoin kuin P4UL:ssa.
         if 'chm' in data:
             if 'tiedosto' in data['chm']:
+                # 2D-tapauksessa zlad-akseli on sama kuin 3D-tiedon
+                # luonnissa käytetty. Se menee siis kerralla oikein.
                 R = rxr.open_rasterio(data['chm']['tiedosto'])
                 dx = np.abs([R.x[2].data-R.x[1].data, R.y[2].data-R.y[1].data])
                 if 'dz' in data['chm']:
@@ -119,6 +121,8 @@ class Pids:
                 del D
                                         
             elif 'tiedosto3d' in data['chm']:
+                # 3D-tapauksessa zlad-akseli pitää mahdollisesti vielä
+                # vaihtaa.
                 print('Luodaan latvustotiedot 3D-tiedostosta.')
                 D = rxr.open_rasterio(data['chm']['tiedosto3d']).sortby('y')
 
@@ -137,9 +141,26 @@ class Pids:
                     self.luo_xy((D.x-D.x[0]).data.astype(np.float32),
                                 (D.y-D.y[0]).data.astype(np.float32))
 
-                self.xrds['zlad'] = dz0*(D.band.data-1).astype(np.float32)
+                DD = xr.DataArray(D.data, dims=['zlad', 'y', 'x'],
+                                  coords={'zlad': dz0*(D.band.data-1).astype(np.float32),
+                                          'y': (D.y-D.y[0]).data.astype(np.float32),
+                                          'x': (D.x-D.x[0]).data.astype(np.float32)})
+                    
 
-                self.xrds['lad'] = (('zlad', 'y', 'x'), D.data)
+                # Muokataan z-akseli kuntoon.
+                if 'dz' in data['chm']:
+                    dz = float(data['chm']['dz'])
+                else:
+                    dz = dz0
+                
+                if 'interpolointi' in data['chm']:
+                    inmen = data['chm']['interpolointi']
+                else:
+                    inmen = 'nearest'
+                
+                zu = np.append(0.0, np.arange(dz/2, DD['zlad'][-1]+dz/100, dz, dtype=np.float32) )
+
+                self.xrds['lad'] = DD.interp(zlad=zu, method=inmen)
 
                 D.close()
                 del D
@@ -147,21 +168,7 @@ class Pids:
             else:
                 sys.exit('Puuttuva tiedosto chm-tiedoissa.')
 
-
-            # Muokataan z-akseli kuntoon.
-            if 'dz' in data['chm']:
-                dz = float(data['chm']['dz'])
-            else:
-                dz = dz0
-                
-            if 'interpolointi' in data['chm']:
-                inmen = data['chm']['interpolointi']
-            else:
-                inmen = 'nearest'
-                
-            zu = np.append(0.0, np.arange(dz/2, self.xrds['zlad'][-1]+dz/100, dz, dtype=np.float32) )
-            self.xrds['lad'] = self.xrds['lad'].interp(zlad=zu, method=inmen)
-            
+            # Attribuutit
             self.xrds['lad'].attrs['units'] = 'm2 m-3'
             self.xrds['lad'].attrs['long_name'] = 'leaf area density'
             self.xrds['lad'].attrs['_FillValue'] = -9999.0
