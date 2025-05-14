@@ -75,6 +75,33 @@ class Pids:
             CRS.attrs['long_name'] = 'coordinate reference system'
             self.xrds['crs'] = CRS
 
+        # Luetaan sijaintitiedot jos niitä ei ole annettu eksplisiittisesti
+        if ('origin_lon' not in data or 'origin_lat' not in data
+            or 'origin_x' not in data or 'origin_y' not in data):
+            if 'dem' in data:
+                print('Alueen sijaintitiedot otetaan DEM-tiedostosta.')
+                D = rxr.open_rasterio(data['dem'])
+            elif 'chm' in data:
+                print('Alueen sijaintitiedot otetaan CHM-tiedostosta.')
+                if 'tiedosto' in data['chm']:
+                    D = rxr.open_rasterio(data['chm']['tiedosto'])
+                elif 'tiedosto3d' in data['chm']:
+                    D = rxr.open_rasterio(data['chm']['tiedosto3d'])
+                else:
+                    print('CHM-tiedostoa ei ole määritelty.')
+            else:
+                print('Sijaintitiedot puuttuvat.')
+
+
+            blonlat = D.rio.transform_bounds("EPSG:4326")
+            bxy = D.rio.bounds()
+            self.xrds.attrs['origin_lon'] = float(blonlat[0])
+            self.xrds.attrs['origin_lat'] = float(blonlat[1])
+            self.xrds.attrs['origin_x'] = float(bxy[0])
+            self.xrds.attrs['origin_y'] = float(bxy[1])
+            D.close()
+            del D
+
         # Luetaan maanpintatiedot
         if 'dem' in data:
             D = rxr.open_rasterio(data['dem'])
@@ -177,6 +204,7 @@ class Pids:
             self.xrds['zlad'].attrs['positive'] = 'up'
             self.xrds['zlad'].attrs['axis'] = 'Z'
     
+
             
     def tallennus(self, polku='PIDS_STATIC'):
         self.xrds.attrs['history'] = str(datetime.now().replace(microsecond=0)) + ': File created'
