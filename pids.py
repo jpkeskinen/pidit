@@ -122,76 +122,9 @@ class Pids:
         # tapahtuu samoin kuin P4UL:ssa.
         if 'chm' in data:
             if 'tiedosto' in data['chm']:
-                # 2D-tapauksessa zlad-akseli on sama kuin 3D-tiedon
-                # luonnissa käytetty. Se menee siis kerralla oikein.
-                R = rxr.open_rasterio(data['chm']['tiedosto'])
-                dx = np.abs([R.x[2].data-R.x[1].data, R.y[2].data-R.y[1].data])
-                if 'dz' in data['chm']:
-                    dz = float(data['chm']['dz'])
-                else:
-                    dz = dx[0]
-                D = _chm_p4ul(R.isel(band=0).sortby('y').data,dx,dz=dz)
-
-                if 'x' in self.xrds.coords and 'y' in self.xrds.coords:
-                    if not self.xrds.x.size == R.x.size or self.xrds.y.size == R.y.size:
-                        sys.exit('Koordinaatistot eivät täsmää.')
-                else:
-                    self.luo_xy((R.x-R.x[0]).data.astype(np.float32),
-                            (R.y-R.y[0]).data.astype(np.float32))
-
-                self.xrds['zlad'] = dz*(np.arange(D.shape[-1])).astype(np.float32)                
-                
-                self.xrds['lad'] = (('x', 'y', 'zlad'), D)
-
-                R.close()
-                del R
-                del D
-                                        
+                self.luo_lad_2dchm(data['chm']['tiedosto'],dz=data['chm']['dz'])
             elif 'tiedosto3d' in data['chm']:
-                # 3D-tapauksessa zlad-akseli pitää mahdollisesti vielä
-                # vaihtaa.
-                print('Luodaan latvustotiedot 3D-tiedostosta.')
-                D = rxr.open_rasterio(data['chm']['tiedosto3d']).sortby('y')
-
-                # Oletetaan, että luettavassa tiedostossa ensimmäine  taso on 0 m.
-                if 'dztiff' in data['chm']:
-                    dz0 = float(data['chm']['dztiff'])
-                elif 'dz' in data['chm']:
-                    dz0 = float(data['chm']['dz'])
-                else:
-                    dz0 = 1.0
-            
-                if 'x' in self.xrds.coords and 'y' in self.xrds.coords:
-                    if not self.xrds.x.size == D.x.size and not self.xrds.y.size == D.y.size:
-                        sys.exit('Koordinaatistot eivät täsmää.')
-                else:
-                    self.luo_xy((D.x-D.x[0]).data.astype(np.float32),
-                                (D.y-D.y[0]).data.astype(np.float32))
-
-                DD = xr.DataArray(D.data, dims=['zlad', 'y', 'x'],
-                                  coords={'zlad': dz0*(D.band.data-1).astype(np.float32),
-                                          'y': (D.y-D.y[0]).data.astype(np.float32),
-                                          'x': (D.x-D.x[0]).data.astype(np.float32)})
-                    
-
-                # Muokataan z-akseli kuntoon.
-                if 'dz' in data['chm']:
-                    dz = float(data['chm']['dz'])
-                else:
-                    dz = dz0
-                
-                if 'interpolointi' in data['chm']:
-                    inmen = data['chm']['interpolointi']
-                else:
-                    inmen = 'nearest'
-                
-                zu = np.append(0.0, np.arange(dz/2, DD['zlad'][-1]+dz/100, dz, dtype=np.float32) )
-
-                self.xrds['lad'] = DD.interp(zlad=zu, method=inmen)
-
-                D.close()
-                del D
-
+                self.luo_lad_3dchm(data['chm']['tiedosto3d'])
             else:
                 sys.exit('Puuttuva tiedosto chm-tiedoissa.')
 
@@ -228,6 +161,62 @@ class Pids:
             self.xrds['y'].attrs['long_name'] = 'distance to origin in y-direction'
             self.xrds['y'].attrs['axis'] = 'Y'
 
+    def luo_lad_2dchm(self,tnimi,dz=None):
+        """Luodaan latvustutiedot 2D-tiedostosta."""
+        # 2D-tapauksessa zlad-akseli on sama kuin 3D-tiedon
+        # luonnissa käytetty. Se menee siis kerralla oikein.
+        R = rxr.open_rasterio(tnimi)
+        dx = np.abs([R.x[2].data-R.x[1].data, R.y[2].data-R.y[1].data])
+        if dz is None:
+            dz = dx[0]
+        else:
+            dz = float(dz)
+        else:
+            
+        D = _chm_p4ul(R.isel(band=0).sortby('y').data,dx,dz=dz)
+
+        if 'x' in self.xrds.coords and 'y' in self.xrds.coords:
+            if not self.xrds.x.size == R.x.size or self.xrds.y.size == R.y.size:
+                sys.exit('Koordinaatistot eivät täsmää.')
+        else:
+            self.luo_xy((R.x-R.x[0]).data.astype(np.float32),
+                        (R.y-R.y[0]).data.astype(np.float32))
+
+        self.xrds['zlad'] = dz*(np.arange(D.shape[-1])).astype(np.float32)                
+                
+        self.xrds['lad'] = (('x', 'y', 'zlad'), D)
+
+        R.close()
+
+    def luo_lad_3dchm(self, tnimi,dz=1.0,inmen='nearest'):
+        """Luodaan latvustotiedot 3D-tiedostosta."""
+        # 3D-tapauksessa zlad-akseli pitää mahdollisesti vielä
+        # vaihtaa.
+        print('Luodaan latvustotiedot 3D-tiedostosta.')
+        D = rxr.open_rasterio(tnimi).sortby('y')
+
+        # Oletetaan, että luettavassa tiedostossa ensimmäine  taso on 0 m.
+        if 'x' in self.xrds.coords and 'y' in self.xrds.coords:
+            if not self.xrds.x.size == D.x.size and not self.xrds.y.size == D.y.size:
+                sys.exit('Koordinaatistot eivät täsmää.')
+        else:
+            self.luo_xy((D.x-D.x[0]).data.astype(np.float32),
+                        (D.y-D.y[0]).data.astype(np.float32))
+
+        DD = xr.DataArray(D.data, dims=['zlad', 'y', 'x'],
+                          coords={'zlad': dz*(D.band.data-1).astype(np.float32),
+                                  'y': (D.y-D.y[0]).data.astype(np.float32),
+                                  'x': (D.x-D.x[0]).data.astype(np.float32)})
+                    
+
+        # Muokataan z-akseli kuntoon.
+        zu = np.append(0.0, np.arange(dz/2, DD['zlad'][-1]+dz/100, dz, dtype=np.float32) )
+
+        self.xrds['lad'] = DD.interp(zlad=zu, method=inmen)
+
+        D.close()
+
+        
         
 def _chm_p4ul(R, dPx, laiRef=6.0, zref=[4.0, 20.0], dz=None):
     # The function code is adapted from P4UL
