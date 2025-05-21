@@ -7,15 +7,19 @@
 import click
 import pids
 
-@click.command(help="Yksinkertainen työkalu PIDS_STATIC-tiedostojen luontiin ja siihen liittyvää esikäsittelyyn.")
-@click.argument("asetustiedosto", type=click.Path(exists=True, dir_okay=False))
-@click.option(
-    "-u", "--ulos",
-    "ulos",
-    type=click.Path(writable=True, dir_okay=False),
+@click.group()
+def cli():
+    """Yksinkertainen työkalu PIDS_STATIC-tiedostojen luontiin ja siihen liittyvää esikäsittelyyn."""
+    pass
+
+@click.command()
+@click.argument("asetustiedosto", type=str, required=True)
+@click.option("-u", "--ulos","ulos", default="PIDS_STATIC", type=str, show_default=True,
     help="Polku luotavalle PIDS_STATIC-tiedostolle."
 )
-def main(asetustiedosto, ulos):
+def tiedostosta(asetustiedosto, ulos):
+    """Luo pidit yaml-asetustiedoston perusteella."""
+
     # Create a PIDS object
     pids_obj = pids.Pids()
 
@@ -30,8 +34,11 @@ def main(asetustiedosto, ulos):
         click.echo("Virhe: Tulos-tiedostoa ei annettu (--ulos)")
         raise click.UsageError("Anna tulostiedosto -u / --ulos option avulla.")
 
+cli.add_command(tiedostosta)    
+    
+
 if __name__ == "__main__":
-    main()
+    cli()
 
 
 
