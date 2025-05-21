@@ -1,26 +1,38 @@
-# Käyttöliittymä pidsien luontia varten.
+# Käyttöliittymä pidsien luontia varten ja siihen liittyvään
+# esikäsittelyyn.
 
 # Jukka-Pekka Keskinen
-# 13.5.2025
+# 5/2025
 
-import argparse
+import click
 import pids
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Yksinkertainen työkalu PIDS_STATIC-tiedostojen luontiin.")
-    parser.add_argument(
-        "asetustiedosto", type=str, help="Polku asetustiedostoon (YAML-muodossa)"
-    )
-    parser.add_argument(
-        "-u","--ulos", type=str, help="Polku luotavalle PIDS_STATIC-tiedostolle."
-    )
-    args = parser.parse_args()
-
+@click.command(help="Yksinkertainen työkalu PIDS_STATIC-tiedostojen luontiin ja siihen liittyvää esikäsittelyyn.")
+@click.argument("asetustiedosto", type=click.Path(exists=True, dir_okay=False))
+@click.option(
+    "-u", "--ulos",
+    "ulos",
+    type=click.Path(writable=True, dir_okay=False),
+    help="Polku luotavalle PIDS_STATIC-tiedostolle."
+)
+def main(asetustiedosto, ulos):
     # Create a PIDS object
     pids_obj = pids.Pids()
 
     # Read from the input YAML file
-    pids_obj.luku_tiedostosta(args.input_file)
+    pids_obj.luku_tiedostosta(asetustiedosto)
 
-    # Write to the output PIDS file
-    pids_obj.tallennus(args.output_file)
+    # Write to the output PIDS file (if -u/--ulos is provided)
+    if ulos:
+        pids_obj.tallennus(ulos)
+    else:
+        # Handle case if no output file is specified:
+        click.echo("Virhe: Tulos-tiedostoa ei annettu (--ulos)")
+        raise click.UsageError("Anna tulostiedosto -u / --ulos option avulla.")
+
+if __name__ == "__main__":
+    main()
+
+
+
+
