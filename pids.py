@@ -171,7 +171,6 @@ class Pids:
             dz = dx[0]
         else:
             dz = float(dz)
-        else:
             
         D = _chm_p4ul(R.isel(band=0).sortby('y').data,dx,dz=dz)
 
@@ -216,8 +215,6 @@ class Pids:
 
         D.close()
 
-        
-        
 def _chm_p4ul(R, dPx, laiRef=6.0, zref=[4.0, 20.0], dz=None):
     # The function code is adapted from P4UL
     # The code is licensed under the MIT License.
@@ -265,3 +262,40 @@ def _chm_p4ul(R, dPx, laiRef=6.0, zref=[4.0, 20.0], dz=None):
             canopy[i,j,k1:k2] = lad_const
 
     return canopy
+
+def luo_3dchm(tnimi2d, ptnimi, zp0=0.0, zpm=30.0, dzp=1.0, dz=None, ulos=None):
+    """Luodaan 3D CHM-tiedosto perustuen profiiliin ja 2D CHM-tiedostoon."""
+
+    p0 = np.loadtxt(ptnimi)
+    z0 = np.arange(zp0, zpm+dzp/10, dzp)
+
+    A = rxr.open_rasterio(tnimi2d)
+
+    # Uusi pystyakseli
+    if dz is None:
+        dz = A.rio.resolution()[0]
+
+    z1 = np.arange(dz, zpm + dz/10, dz)
+    p = np.interp(z1, z0, p0)
+
+    # 3D-geotiffit luodaan seuraavasti: Otetaan tuosta data numpy
+    # taulukkoon ja missä kohtaa latvustoa on yli z metrin korkeudessa
+    # ja laitetaan jokaiseen sellaiseen ruutuun p-taulokosta
+    # arvo. Tallennetaan tämä taulukko sitten geotiffinä.
+
+    AAA = A.isel(band=0)*0.0
+    for i in range(z1.size):   
+        AA = A.isel(band=0) - z1[i]
+        AA.data[AA.data < 0.0] = 0.0
+        AA.data[AA.data > 0.0] = p[i]
+        AA.band.data = i+2
+        AAA = xr.concat([AAA, AA], dim='band')
+
+    AAA.rio.set_attrs({'dz': dz},inplace=True)
+
+    A.close()
+
+    if ulos is not None:
+        AAA.rio.to_raster(ulos, driver='GTiff', compress='ZSTD')
+
+    return AAA

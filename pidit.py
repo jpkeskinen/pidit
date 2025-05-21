@@ -27,16 +27,24 @@ def tiedostosta(asetustiedosto, ulos):
     pids_obj.luku_tiedostosta(asetustiedosto)
 
     # Write to the output PIDS file (if -u/--ulos is provided)
-    if ulos:
-        pids_obj.tallennus(ulos)
-    else:
-        # Handle case if no output file is specified:
-        click.echo("Virhe: Tulos-tiedostoa ei annettu (--ulos)")
-        raise click.UsageError("Anna tulostiedosto -u / --ulos option avulla.")
+    pids_obj.tallennus(ulos)
+
+@click.command()
+@click.argument("CHMtiedosto", type=str, required=True)
+@click.argument("profiilitiedosto", type=str, required=True)
+@click.argument("dz", type=float, required=True)
+@click.option("-u", "--ulos","ulos", default=None, type=str, show_default=False,
+    help="Polku luotavalle 3D tiedostolle."
+)
+def CHM3D(CHMtiedosto,ulos,profiili):
+    """Luo 3D CHM-tiedoston 2D CHM-tiedostosta ja profiilista."""
+    pids.luo_3DCHM(CHMtiedosto, profiilitiedosto,zp0=2.5, zpm=30.0, dz=dz, ulos=ulos)
+
 
 cli.add_command(tiedostosta)    
-    
+cli.add_command(CHM3D)
 
+    
 if __name__ == "__main__":
     cli()
 
