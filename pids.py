@@ -263,7 +263,7 @@ def _chm_p4ul(R, dPx, laiRef=6.0, zref=[4.0, 20.0], dz=None):
 
     return canopy
 
-def luo_3dchm(tnimi2d, ptnimi, zp0=0.0, zpm=30.0, dzp=1.0, dz=None, ulos=None):
+def luo_3dchm(tnimi2d, ptnimi, zp0=2.5, zpm=30.0, dzp=2.5, dz=None, ulos=None):
     """Luodaan 3D CHM-tiedosto perustuen profiiliin ja 2D CHM-tiedostoon."""
 
     p0 = np.loadtxt(ptnimi)
