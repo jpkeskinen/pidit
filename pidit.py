@@ -1,8 +1,10 @@
+#!/usr/bin/env python3
+
 # Käyttöliittymä pidsien luontia varten ja siihen liittyvään
 # esikäsittelyyn.
 
 # Jukka-Pekka Keskinen
-# 5/2025
+# 2025
 
 import click
 import pids
@@ -15,10 +17,12 @@ def cli():
 @click.command()
 @click.argument("asetustiedosto", type=str, required=True)
 @click.option("-u", "--ulos","ulos", default="PIDS_STATIC", type=str, show_default=True,
-    help="Polku luotavalle PIDS_STATIC-tiedostolle."
-)
+    help="Polku luotavalle PIDS_STATIC-tiedostolle.")
 def tiedostosta(asetustiedosto, ulos):
-    """Luo pidit yaml-asetustiedoston perusteella."""
+    """Luo pidit yaml-asetustiedoston perusteella.
+
+    ASETUSTIEDOSTO: Polku YAML-asetustiedostoon, joka sisältää PIDS-asetukset.
+    """
 
     # Create a PIDS object
     pids_obj = pids.Pids()
@@ -29,21 +33,23 @@ def tiedostosta(asetustiedosto, ulos):
     # Write to the output PIDS file (if -u/--ulos is provided)
     pids_obj.tallennus(ulos)
 
-@click.command()
+@click.command()  
 @click.argument("chmtiedosto", type=str, required=True)
 @click.argument("profiilitiedosto", type=str, required=True)
 @click.argument("dz", type=float, required=True)
 @click.option("-u", "--ulos","ulos", default=None, type=str, show_default=False,
-    help="Polku luotavalle 3D tiedostolle."
-)
+    help="Polku luotavalle 3D tiedostolle.")
 def CHM3D(chmtiedosto,ulos,profiilitiedosto,dz):
-    """Luo 3D CHM-tiedoston 2D CHM-tiedostosta ja profiilista."""
-    pids.luo_3dchm(chmtiedosto, profiilitiedosto, dz=dz, ulos=ulos)
+    """Luo 3D CHM-tiedoston 2D CHM-tiedostosta ja profiilista.
 
+    CHMTIEDOSTO: 2D CHM-geotiff, joka sisältää korkeustiedot.\
+    PROFIILITIEDOSTO: Tekstitiedosto, joka sisältää profiilitiedot.\
+    DZ: Korkeuden askelväli metreissä (esim. 1.0).
+    """
+    pids.luo_3dchm(chmtiedosto, profiilitiedosto, dz=dz, ulos=ulos)
 
 cli.add_command(tiedostosta)    
 cli.add_command(CHM3D)
-
     
 if __name__ == "__main__":
     cli()
