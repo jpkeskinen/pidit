@@ -263,13 +263,15 @@ def _chm_p4ul(R, dPx, laiRef=6.0, zref=[4.0, 20.0], dz=None):
 
     return canopy
 
-def luo_3dchm(tnimi2d, ptnimi, zp0=2.5, zpm=30.0, dzp=2.5, dz=None, ulos=None):
+def luo_3dchm(tnimi2d, ptnimi, zp0=0.0, zpm=None, dzp=1.0, dz=None, ulos=None, bmax=9999):
     """Luodaan 3D CHM-tiedosto perustuen profiiliin ja 2D CHM-tiedostoon."""
 
-    p0 = np.loadtxt(ptnimi)
-    z0 = np.arange(zp0, zpm+dzp/10, dzp)
-
     A = rxr.open_rasterio(tnimi2d)
+    if zpm==None:
+        zpm = float(A.isel(band=0).max().data)
+    
+    p0 = np.loadtxt(ptnimi)
+    z0 = np.arange(p0.size)*dzp + zp0
 
     # Uusi pystyakseli
     if dz is None:
@@ -284,7 +286,7 @@ def luo_3dchm(tnimi2d, ptnimi, zp0=2.5, zpm=30.0, dzp=2.5, dz=None, ulos=None):
     # arvo. Tallennetaan tämä taulukko sitten geotiffinä.
 
     AAA = A.isel(band=0)*0.0
-    for i in range(z1.size):   
+    for i in range(np.min((z1.size,bmax-1))):   
         AA = A.isel(band=0) - z1[i]
         AA.data[AA.data < 0.0] = 0.0
         AA.data[AA.data > 0.0] = p[i]

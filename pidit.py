@@ -36,17 +36,17 @@ def tiedostosta(asetustiedosto, ulos):
 @click.command()  
 @click.argument("chmtiedosto", type=str, required=True)
 @click.argument("profiilitiedosto", type=str, required=True)
-@click.argument("dz", type=float, required=True)
+@click.option("-z", "--dz", "dz", default=1.0, type=float, show_default=True,
+    help="Ulos tulevan 3D-CHM:n korkeuden askelväli metreissä.")
 @click.option("-u", "--ulos","ulos", default=None, type=str, show_default=False,
     help="Polku luotavalle 3D tiedostolle.")
-def CHM3D(chmtiedosto,ulos,profiilitiedosto,dz):
-    """Luo 3D CHM-tiedoston 2D CHM-tiedostosta ja profiilista.
-
-    CHMTIEDOSTO: 2D CHM-geotiff, joka sisältää korkeustiedot.\
-    PROFIILITIEDOSTO: Tekstitiedosto, joka sisältää profiilitiedot.\
-    DZ: Korkeuden askelväli metreissä (esim. 1.0).
+@click.option("-m", "--maksimi", "maksimi", default=100, type=int, show_default=False,
+              help="Suurin tasomäärä luotavassa tiffissä.")
+def CHM3D(chmtiedosto,ulos,profiilitiedosto,dz,maksimi):
+    """Luo 3D CHM-geotiffin 2D CHM-geotiffin ja PAD-profiilin avulla.
+    PAD-profiili luetaan tekstimuotoisesta profiilitiedostosta.
     """
-    pids.luo_3dchm(chmtiedosto, profiilitiedosto, dz=dz, ulos=ulos)
+    pids.luo_3dchm(chmtiedosto, profiilitiedosto, dz=dz, ulos=ulos, bmax=maksimi)
 
 cli.add_command(tiedostosta)    
 cli.add_command(CHM3D)
