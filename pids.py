@@ -124,7 +124,11 @@ class Pids:
             if 'tiedosto' in data['chm']:
                 self.luo_lad_2dchm(data['chm']['tiedosto'],dz=data['chm']['dz'])
             elif 'tiedosto3d' in data['chm']:
-                self.luo_lad_3dchm(data['chm']['tiedosto3d'])
+                if 'dz' in data['chm']:
+                    dz = data['chm']['dz']
+                else:
+                    dz = None
+                self.luo_lad_3dchm(data['chm']['tiedosto3d'],dz=dz)
             else:
                 sys.exit('Puuttuva tiedosto chm-tiedoissa.')
 
@@ -187,13 +191,20 @@ class Pids:
 
         R.close()
 
-    def luo_lad_3dchm(self, tnimi,dz=1.0,inmen='nearest'):
+    def luo_lad_3dchm(self, tnimi,dz=None,inmen='nearest'):
         """Luodaan latvustotiedot 3D-tiedostosta."""
         # 3D-tapauksessa zlad-akseli pitää mahdollisesti vielä
         # vaihtaa.
         print('Luodaan latvustotiedot 3D-tiedostosta.')
         D = rxr.open_rasterio(tnimi).sortby('y')
 
+        if dz==None:
+            if 'dz' in D.rio.attrs:
+                dz = float(D.rio.attrs['dz'])
+            else:
+                print('dz-tietoa ei ole annettu, käytetään oletusarvoa 1.0 m.')
+                dz = 1.0
+        
         # Oletetaan, että luettavassa tiedostossa ensimmäine  taso on 0 m.
         if 'x' in self.xrds.coords and 'y' in self.xrds.coords:
             if not self.xrds.x.size == D.x.size and not self.xrds.y.size == D.y.size:

@@ -36,8 +36,6 @@ crs:
 
 chm:
  tiedosto: "rkorpi_PAD.tif"
- dztiff: 1.0
  dz: 1.25
- interpolointi: 'nearest'
 
 dem: 'maasto_N03.tif'
