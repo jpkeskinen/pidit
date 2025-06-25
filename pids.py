@@ -227,9 +227,8 @@ class Pids:
         D.close()
 
 def _chm_p4ul(R, dPx, laiRef=6.0, zref=[4.0, 20.0], dz=None):
-    # The function code is adapted from P4UL
-    # The code is licensed under the MIT License.
-    # Copyright (c) 2017 Mikko J.S. Auvinen
+    # The code of this function is adapted from P4UL by Mikko
+    # J.S. Auvinen, MIT License. https://github.com/mjsauvinen/P4UL
     
     nPx = np.shape(R)
 
