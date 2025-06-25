@@ -1,0 +1,5 @@
+# Pidit
+
+Suoraviivainen python-kirjasto PALM-koodin vaatimaa
+esikäsittelyä varten ja erityisesti PIDS_STATIC-tiedostojen luomista
+varten.
