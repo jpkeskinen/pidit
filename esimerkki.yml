@@ -8,7 +8,7 @@ rotation_angle: 0.0
 acronym: 'esim'
 author: "Jukka-Pekka Keskinen (FMI)"
 campaign: 
-contact_person: "jukka-pekka.keskinen@fmi.fi"
+contact_person: 
 comment: "Esimerkkitiedosto"
 data_content: 'ei juuri mitään'
 dependencies:
@@ -39,3 +39,4 @@ chm:
  dz: 1.25
 
 dem: 'maasto_N03.tif'
+ marginaali: 5

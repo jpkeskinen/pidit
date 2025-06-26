@@ -104,7 +104,10 @@ class Pids:
 
         # Luetaan maanpintatiedot
         if 'dem' in data:
-            D = rxr.open_rasterio(data['dem'])
+            if 'marginaali' in data['dem']:
+                D = marginaalit(data['dem']['tiedosto'], pak=data['dem']['marginaali'])
+            else:
+                D = rxr.open_rasterio(data['dem'])
             D = D.isel(band=0).sortby('y')
             if not 'x' in self.xrds.coords and not 'y' in self.xrds.coords:
                 self.luo_xy((D.x-D.x[0]).data.astype(np.float32),
@@ -323,17 +326,25 @@ def marginaalit(gtnimi, pak=5, ulos=None):
     pak: int, marginaalin paksuus pikseleinä.
     ulos: str, jos annettu, niin tallennetaan uusi geotiff tähän.
     """
-
+    print('Luodaan marginaali jonka paksuus on {} pikseliä.'.format(pak))
+    
     D = rxr.open_rasterio(gtnimi)
     a = (D[0,:-1,0].mean().data + D[0,1:,-1].mean().data + D[0,0,1:].mean().data + D[0,-1,:-1].mean().data)/4
-    for i in range(pak):
-        D[0,i:(-i-1),i].data = ((pak-i)*a*np.ones(D[0,i:(-i-1),i].data.shape)
+
+    # Uloin reuna hoidetaan erikseen koska negatiivinen indeksointi on
+    # vähän hankalaa
+    D.data[0,:-1,0] = a
+    D.data[0,1:,-1] = a
+    D.data[0,0,1:] = a
+    D.data[0,-1,:-1] = a
+    for i in range(1,pak):
+        D.data[0,i:(-i-1),i] = ((pak-i)*a*np.ones(D[0,i:(-i-1),i].data.shape)
                                 + D[0,i:(-i-1),i].data*i)/pak
-        D[0,(i+1):-i,(-i-1)].data = ((pak-i)*a*np.ones(D[0,(i+1):-i,(-i-1)].data.shape)
+        D.data[0,(i+1):-i,(-i-1)] = ((pak-i)*a*np.ones(D[0,(i+1):-i,(-i-1)].data.shape)
                                      + D[0,(i+1):-i,(-i-1)].data*i)/pak
-        D[0,i,(i+1):-i].data = ((pak-i)*a*np.ones(D[0,i,(i+1):-i].data.shape)
+        D.data[0,i,(i+1):-i] = ((pak-i)*a*np.ones(D[0,i,(i+1):-i].data.shape)
                                      + D[0,i,(i+1):-i].data*i)/pak
-        D[0,(-i-1),i:(-i-1)].data = ((pak-i)*a*np.ones(D[0,(-i-1),i:(-i-1)].data.shape)
+        D.data[0,(-i-1),i:(-i-1)] = ((pak-i)*a*np.ones(D[0,(-i-1),i:(-i-1)].data.shape)
                                         + D[0,(-i-1),i:(-i-1)].data*i)/pak
 
     if ulos is not None:
