@@ -38,7 +38,7 @@ def tiedostosta(asetustiedosto, ulos):
 @click.argument("profiilitiedosto", type=str, required=True)
 @click.option("-z", "--dz", "dz", default=1.0, type=float, show_default=True,
     help="Ulos tulevan 3D-CHM:n korkeuden askelväli metreissä.")
-@click.option("-u", "--ulos","ulos", default=None, type=str, show_default=False,
+@click.option("-u", "--ulos","ulos", default="3dchm.tif", type=str, show_default=True,
     help="Polku luotavalle 3D tiedostolle.")
 @click.option("-m", "--maksimi", "maksimi", default=100, type=int, show_default=False,
               help="Suurin tasomäärä luotavassa tiffissä.")
@@ -48,9 +48,22 @@ def CHM3D(chmtiedosto,ulos,profiilitiedosto,dz,maksimi):
     """
     pids.luo_3dchm(chmtiedosto, profiilitiedosto, dz=dz, ulos=ulos, bmax=maksimi)
 
+@click.command()
+@click.argument("geotiffi", type=str, required=True)
+@click.option("-u", "--ulos","ulos", default="marginaaleilla.tif", type=str, show_default=True,
+    help="Polku luotavalle marginaalit sisältävälle geotiffille.")
+@click.option("-m", "--marginaali", "marginaali", default=10, type=int, show_default=True,
+    help="Marginaalien koko pikseleinä (esim. 10).")
+def marginaalit(geotiffi,ulos, marginaali):
+    """Lisää geotiffiin marginaalit syklisiä simulaatioita varten."""
+    pids.marginaalit(geotiffi, pak=marginaali,ulos=ulos)
+
+
+    
 cli.add_command(tiedostosta)    
 cli.add_command(CHM3D)
-    
+cli.add_command(marginaalit)
+
 if __name__ == "__main__":
     cli()
 
