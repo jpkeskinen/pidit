@@ -311,3 +311,32 @@ def luo_3dchm(tnimi2d, ptnimi, zp0=0.0, zpm=None, dzp=1.0, dz=None, ulos=None, b
         AAA.rio.to_raster(ulos, driver='GTiff', compress='ZSTD')
 
     return AAA
+
+def marginaalit(gtnimi, pak=5, ulos=None):
+    """Luodaan geotiffin reunoille marginaalit.
+
+    Tämä on hyödyllistä syklisten alueiden tapauskessa. Marginaalit
+    tehdään siten, että annetun paksuuden aikana dem-korkeudet
+    muuttuvat reunan keskiarvoksi.
+
+    gtnimi: str, geotiff-tiedoston nimi.
+    pak: int, marginaalin paksuus pikseleinä.
+    ulos: str, jos annettu, niin tallennetaan uusi geotiff tähän.
+    """
+
+    D = rxr.open_rasterio(gtnimi)
+    a = (D[0,:-1,0].mean().data + D[0,1:,-1].mean().data + D[0,0,1:].mean().data + D[0,-1,:-1].mean().data)/4
+    for i in range(pak):
+        D[0,i:(-i-1),i].data = ((pak-i)*a*np.ones(D[0,i:(-i-1),i].data.shape)
+                                + D[0,i:(-i-1),i].data*i)/pak
+        D[0,(i+1):-i,(-i-1)].data = ((pak-i)*a*np.ones(D[0,(i+1):-i,(-i-1)].data.shape)
+                                     + D[0,(i+1):-i,(-i-1)].data*i)/pak
+        D[0,i,(i+1):-i].data = ((pak-i)*a*np.ones(D[0,i,(i+1):-i].data.shape)
+                                     + D[0,i,(i+1):-i].data*i)/pak
+        D[0,(-i-1),i:(-i-1)].data = ((pak-i)*a*np.ones(D[0,(-i-1),i:(-i-1)].data.shape)
+                                        + D[0,(-i-1),i:(-i-1)].data*i)/pak
+
+    if ulos is not None:
+        D.rio.to_raster(ulos, driver='GTiff', compress='ZSTD')
+
+    return D
