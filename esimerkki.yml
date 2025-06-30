@@ -38,5 +38,6 @@ chm:
  tiedosto: "rkorpi_PAD.tif"
  dz: 1.25
 
-dem: 'maasto_N03.tif'
+dem:
+ tiedosto: 'maasto_N03.tif'
  marginaali: 5

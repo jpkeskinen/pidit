@@ -1,3 +1,4 @@
+
 # Luokka PIDS-tiedostoja varten
 
 # 2024
@@ -80,7 +81,7 @@ class Pids:
             or 'origin_x' not in data or 'origin_y' not in data):
             if 'dem' in data:
                 print('Alueen sijaintitiedot otetaan DEM-tiedostosta.')
-                D = rxr.open_rasterio(data['dem'])
+                D = rxr.open_rasterio(data['dem']['tiedosto'])
             elif 'chm' in data:
                 print('Alueen sijaintitiedot otetaan CHM-tiedostosta.')
                 if 'tiedosto' in data['chm']:
@@ -107,7 +108,7 @@ class Pids:
             if 'marginaali' in data['dem']:
                 D = marginaalit(data['dem']['tiedosto'], pak=data['dem']['marginaali'])
             else:
-                D = rxr.open_rasterio(data['dem'])
+                D = rxr.open_rasterio(data['dem']['tiedosto'])
             D = D.isel(band=0).sortby('y')
             if not 'x' in self.xrds.coords and not 'y' in self.xrds.coords:
                 self.luo_xy((D.x-D.x[0]).data.astype(np.float32),
