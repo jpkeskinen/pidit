@@ -132,7 +132,11 @@ class Pids:
                     dz = data['chm']['dz']
                 else:
                     dz = None
-                self.luo_lad_3dchm(data['chm']['tiedosto3d'],dz=dz)
+                if 'dztiff' in data['chm']:
+                    dztiff = data['chm']['dztiff']
+                else:
+                    dztiff = None
+                self.luo_lad_3dchm(data['chm']['tiedosto3d'],dz=dz,dztiff=dztiff)
             else:
                 sys.exit('Puuttuva tiedosto chm-tiedoissa.')
 
@@ -195,30 +199,46 @@ class Pids:
 
         R.close()
 
-    def luo_lad_3dchm(self, tnimi,dz=None,inmen='nearest'):
-        """Luodaan latvustotiedot 3D-tiedostosta."""
+    def luo_lad_3dchm(self, tnimi,dz=None,dztiff=None,inmen='linear'):
+        """Luodaan latvustotiedot 3D-tiedostosta.
+
+        Argumentit:
+        tnimi: str, 3D-latvustutiedot sisältävän tiff-tiedoston nimi.
+        dz: float, haluttu pystysuuntainen väli metreinä. Jos None,
+            käytetään tiff-tiedostosta luettua arvoa.
+        dztiff: float, tiff-tiedoston zlad-akselin väli metreinä.
+            Jos None, käytetään tiff-tiedostosta luettua arvoa.
+        inmen: str, interpolaatiomenetelmä.
+        
+        """
         # 3D-tapauksessa zlad-akseli pitää mahdollisesti vielä
         # vaihtaa.
-        print('Luodaan latvustotiedot 3D-tiedostosta.')
-        D = rxr.open_rasterio(tnimi).sortby('y')
 
-        if dz==None:
-            if 'dz' in D.rio.attrs:
-                dz = float(D.rio.attrs['dz'])
+        D = rxr.open_rasterio(tnimi).sortby('y')
+        if dztiff == None:
+            if 'dz' not in D.attrs:
+                sys.exit('Virhe: Tiedostossa '+tnimi+' ei ole dz-tietoa eikä dztiff arvoa ole annettu.')
             else:
-                print('dz-tietoa ei ole annettu, käytetään oletusarvoa 1.0 m.')
-                dz = 1.0
+                print('Käytetään tiedostosta '+tnimi+' luettua dz-tietoa '+str(D.attrs['dz'])+' m.')
+                dztiff = D.attrs['dz']
+
+        print('Luodaan latvustotiedot 3D-tiedostosta.')
         
+        if dz==None:
+            if 'dz' in D.attrs:
+                dz = D.attrs['dz']
+                print('Käytetään tiffin dz-tietoa {} m.'.format(dz))
+
         # Oletetaan, että luettavassa tiedostossa ensimmäine  taso on 0 m.
         if 'x' in self.xrds.coords and 'y' in self.xrds.coords:
             if not self.xrds.x.size == D.x.size and not self.xrds.y.size == D.y.size:
-                sys.exit('Koordinaatistot eivät täsmää.')
+                sys.exit('Tiffin ja pidsin koordinaatistot eivät täsmää.')
         else:
             self.luo_xy((D.x-D.x[0]).data.astype(np.float32),
                         (D.y-D.y[0]).data.astype(np.float32))
 
         DD = xr.DataArray(D.data, dims=['zlad', 'y', 'x'],
-                          coords={'zlad': dz*(D.band.data-1).astype(np.float32),
+                          coords={'zlad': dztiff*(D.band.data-1).astype(np.float32),
                                   'y': (D.y-D.y[0]).data.astype(np.float32),
                                   'x': (D.x-D.x[0]).data.astype(np.float32)})
                     
@@ -226,7 +246,7 @@ class Pids:
         # Muokataan z-akseli kuntoon.
         zu = np.append(0.0, np.arange(dz/2, DD['zlad'][-1]+dz/100, dz, dtype=np.float32) )
 
-        self.xrds['lad'] = DD.interp(zlad=zu, method=inmen)
+        self.xrds['lad'] = DD.interp(zlad=zu, method=inmen, kwargs={"fill_value":"extrapolate"})
 
         D.close()
 
